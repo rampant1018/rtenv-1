@@ -98,6 +98,7 @@ char cmd[HISTORY_COUNT][CMDBUF_SIZE];
 int cur_his=0;
 int fdout;
 int fdin;
+int create_process = 0;
 
 /* Command handlers. */
 void export_envvar(int argc, char *argv[]);
@@ -106,6 +107,7 @@ void show_cmd_info(int argc, char *argv[]);
 void show_task_info(int argc, char *argv[]);
 void show_man_page(int argc, char *argv[]);
 void show_history(int argc, char *argv[]);
+void dynamic_fork(int argc, char *argv[]);
 
 /* Enumeration for command types. */
 enum {
@@ -115,6 +117,7 @@ enum {
 	CMD_HISTORY,
 	CMD_MAN,
 	CMD_PS,
+        CMD_FORK,
 	CMD_COUNT
 } CMD_TYPE;
 /* Structure for command handler. */
@@ -129,7 +132,8 @@ const hcmd_entry cmd_data[CMD_COUNT] = {
 	[CMD_HELP] = {.cmd = "help", .func = show_cmd_info, .description = "List all commands you can use."},
 	[CMD_HISTORY] = {.cmd = "history", .func = show_history, .description = "Show latest commands entered."}, 
 	[CMD_MAN] = {.cmd = "man", .func = show_man_page, .description = "Manual pager."},
-	[CMD_PS] = {.cmd = "ps", .func = show_task_info, .description = "List all the processes."}
+	[CMD_PS] = {.cmd = "ps", .func = show_task_info, .description = "List all the processes."},
+	[CMD_FORK] = {.cmd = "fork", .func = dynamic_fork, .description = "Dynamic create a process which display a message 5 times."}
 };
 
 /* Structure for environment variables. */
@@ -774,6 +778,48 @@ void show_history(int argc, char *argv[])
 	}
 }
 
+void new_process(int index)
+{
+    int i;
+    char index_str[2];
+
+    for(i = 0; i < 5; i++) {
+        write(fdout, "Dynamic process ", 17);
+        itoa(index, index_str, 2);
+        write(fdout, index_str, 2);
+        write(fdout, next_line, 3);
+
+        sleep(100);
+    }
+}
+
+void dynamic_fork(int argc, char *argv[])
+{
+    create_process = 1;
+}
+
+void dynamic_process()
+{
+    int index = 0;
+
+    while(1) {
+        if(create_process) {
+            write(fdout, "create process", 7);
+            write(fdout, next_line, 3);
+            if(!fork()) {
+                write(fdout, "work start", 11);
+                write(fdout, next_line, 3);
+                setpriority(0, PRIORITY_DEFAULT);
+                new_process(index);
+                write(fdout, "work done", 10);
+                write(fdout, next_line, 3);
+                while(1);
+            }
+            create_process = 0;
+        }
+    }
+}
+
 int write_blank(int blank_num)
 {
 	char blank[] = " ";
@@ -794,6 +840,7 @@ void first()
 	if (!fork()) setpriority(0, 0), serialin(USART2, USART2_IRQn);
 	if (!fork()) rs232_xmit_msg_task();
 	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), serial_test_task();
+        if (!fork()) setpriority(0, PRIORITY_DEFAULT), dynamic_process();
 
 	setpriority(0, PRIORITY_LIMIT);
 
