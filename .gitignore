@@ -1,3 +1,5 @@
 main.bin
 main.elf
 main.list
+*.swp
+gdb.txt
