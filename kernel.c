@@ -107,7 +107,7 @@ void show_cmd_info(int argc, char *argv[]);
 void show_task_info(int argc, char *argv[]);
 void show_man_page(int argc, char *argv[]);
 void show_history(int argc, char *argv[]);
-void dynamic_fork(int argc, char *argv[]);
+void dynamic_exec(int argc, char *argv[]);
 
 /* Enumeration for command types. */
 enum {
@@ -117,7 +117,7 @@ enum {
 	CMD_HISTORY,
 	CMD_MAN,
 	CMD_PS,
-        CMD_FORK,
+        CMD_EXEC,
 	CMD_COUNT
 } CMD_TYPE;
 /* Structure for command handler. */
@@ -133,7 +133,7 @@ const hcmd_entry cmd_data[CMD_COUNT] = {
 	[CMD_HISTORY] = {.cmd = "history", .func = show_history, .description = "Show latest commands entered."}, 
 	[CMD_MAN] = {.cmd = "man", .func = show_man_page, .description = "Manual pager."},
 	[CMD_PS] = {.cmd = "ps", .func = show_task_info, .description = "List all the processes."},
-	[CMD_FORK] = {.cmd = "fork", .func = dynamic_fork, .description = "Dynamic create a process which display a message 5 times."}
+	[CMD_EXEC] = {.cmd = "exec", .func = dynamic_exec, .description = "Dynamic create a process which display a message 5 times."}
 };
 
 /* Structure for environment variables. */
@@ -793,7 +793,7 @@ void new_process(int index)
     }
 }
 
-void dynamic_fork(int argc, char *argv[])
+void dynamic_exec(int argc, char *argv[])
 {
     create_process = 1;
 }
