@@ -1306,6 +1306,7 @@ int main()
 			i++;
 		current_task = task_pop(&ready_list[i])->pid;
 	}
+        unit_test();
 
 	return 0;
 }
