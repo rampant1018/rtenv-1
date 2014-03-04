@@ -1,6 +1,5 @@
 file main.elf
 target remote :3333
-b unit_test.c:4
 define show_environment_variables
    echo Current environment variables:\n
    set $r0=0
