@@ -3,7 +3,11 @@
 
 #include "syscall.h"
 
+#ifdef DEBUG
+#include "unit_test.h"
+#endif
 #include <stddef.h>
+#include <ctype.h>
 
 void *memcpy(void *dest, const void *src, size_t n);
 
@@ -1306,7 +1310,9 @@ int main()
 			i++;
 		current_task = task_pop(&ready_list[i])->pid;
 	}
+#ifdef DEBUG
         unit_test();
+#endif
 
 	return 0;
 }
