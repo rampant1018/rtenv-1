@@ -1,5 +1,5 @@
-目的
+Introduction
 ==
-使用qemu模擬arm cpu，並在其上開發一套作業系統，並從中學習
+RTENV is a operating system which is based on ARM cortex-M3. Now it can support some shell command.
 
-[實驗筆記](https://hackpad.com/RTENV-xzo9mDkptBW)
+[Experiment Notes](https://hackpad.com/RTENV-xzo9mDkptBW)
