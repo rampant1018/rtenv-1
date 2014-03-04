@@ -1,0 +1,21 @@
+source qemudbg_init.in
+set logging on
+set itoa(0, cmd[0])
+if !strcmp(cmd[0], "0")
+   echo Pass: itoa correctly converts 0 into "0"\n
+else
+   printf "Fail: itoa converts 0 into \"%s\", shall be \"0\"\n", cmd[0]
+end
+set itoa(-32768, cmd[0])
+if !strcmp(cmd[0], "-32768")
+   echo Pass: itoa correctly converts -32768 into "-32768"\n
+else
+   printf "Fail: itoa converts -32768 into \"%s\", shall be \"-32768\"\n", cmd[0]
+end
+set itoa(32767, cmd[0])
+if !strcmp(cmd[0], "32767")
+   echo Pass: itoa correctly converts 32767 into "32767"\n
+else
+   printf "Fail: itoa converts 32767 into \"%s\", shall be \"32767\"\n", cmd[0]
+end
+
