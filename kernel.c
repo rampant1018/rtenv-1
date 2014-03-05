@@ -9,12 +9,13 @@
 #endif
 #include <stddef.h>
 #include <ctype.h>
+#include <alloca.h>
 
 /* FIXME: This is not implement  completely. Needs to modify later. */
 void *malloc(size_t size) 
 {
-   static char m[1024] = {0};
-   return m;
+    char *m = alloca(1024);
+    return m;
 }
 
 void *memcpy(void *dest, const void *src, size_t n);
