@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <ctype.h>
 
+/* FIXME: This is not implement  completely. Needs to modify later. */
 void *malloc(size_t size) 
 {
    static char m[1024] = {0};
