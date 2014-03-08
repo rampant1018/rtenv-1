@@ -1171,7 +1171,7 @@ int main()
 
         /* Initialize program_break */
         for(i = 0; i < TASK_LIMIT; i++)
-                program_break[i] = heaps[i] - 1; // program_break is located at last end location
+                program_break[i] = heaps[i]; // program_break is located at last end location
 
 	while (1) {
 		tasks[current_task].stack = activate(tasks[current_task].stack);
