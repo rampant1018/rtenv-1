@@ -74,6 +74,7 @@ void puts(char *s)
 }
 
 #define STACK_SIZE 512 /* Size of task stacks in words */
+#define HEAP_SIZE  128
 #define TASK_LIMIT 8  /* Max number of tasks we can handle */
 #define PIPE_BUF   64 /* Size of largest atomic pipe message */
 #define PATH_MAX   32 /* Longest absolute path */
@@ -1141,6 +1142,11 @@ int main()
 	int timeup;
 	unsigned int tick_count = 0;
 
+        // for sbrk()
+        unsigned char heaps[TASK_LIMIT][HEAP_SIZE];
+        unsigned char *program_break[TASK_LIMIT];
+        unsigned char *previous_pb;
+
 	SysTick_Config(configCPU_CLOCK_HZ / configTICK_RATE_HZ);
 
 	init_rs232();
@@ -1162,6 +1168,10 @@ int main()
 	/* Initialize ready lists */
 	for (i = 0; i <= PRIORITY_LIMIT; i++)
 		ready_list[i] = NULL;
+
+        /* Initialize program_break */
+        for(i = 0; i < TASK_LIMIT; i++)
+                program_break[i] = heaps[i] - 1; // program_break is located at last end location
 
 	while (1) {
 		tasks[current_task].stack = activate(tasks[current_task].stack);
@@ -1251,6 +1261,18 @@ int main()
 				tasks[current_task].status = TASK_WAIT_TIME;
 			}
 			break;
+                case SYS_SBRK:
+                        if(program_break[current_task] + task[current_task].stack->r0 >= heaps[current_task] - 1 && program_break[current_task] + task[current_task].stack->r0 < heaps[current_task] + HEAP_SIZE) {
+                                previous_pb = program_break[current_task];
+                                program_break[current_task] += task[current_task].stack->r0;
+                                task[current_task].stack->r0 = previous_pb;
+                        }
+                        else {
+                                task[current_task].stack->r0 = -1;
+                        }
+
+
+                        break;
 		default: /* Catch all interrupts */
 			if ((int)tasks[current_task].stack->r7 < 0) {
 				unsigned int intr = -tasks[current_task].stack->r7 - 16;

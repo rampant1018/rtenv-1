@@ -10,6 +10,7 @@
 #define SYS_SETPRIORITY 0x7
 #define SYS_MKNOD       0x8
 #define SYS_SLEEP       0x9
+#define SYS_SBRK        0xA
 
 void *activate(void *stack);
 
@@ -27,3 +28,5 @@ int setpriority(int who, int value);
 int mknod(int fd, int mode, int dev);
 
 void sleep(unsigned int);
+
+void *sbrk(int increment);
