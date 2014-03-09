@@ -29,8 +29,9 @@ static Header *freep = NULL; // start of free list
 
 void *malloc(unsigned nbytes) 
 {
-    Header *p, *prevp, *cp;
+    Header *p, *prevp;
     unsigned nunits;
+    void *cp;
 
     nunits = (nbytes + sizeof(Header) - 1) / sizeof(Header) + 1; // Round up
 
@@ -53,11 +54,13 @@ void *malloc(unsigned nbytes)
             return (void *)(p + 1);
         }
         if(p == freep) { // wrapped around free list
-            cp = p;
-            if((p = (Header *)sbrk(nunits * sizeof(Header))) == (void *)-1) {
+            cp = sbrk(nunits * sizeof(Header));
+            if(cp == (void *)-1) {
                 return NULL; // fail
             }
             else {
+                p = (Header *)cp;
+                p->s.size = nunits;
                 free((void *)(p + 1));
                 p = freep;
             }
@@ -1218,8 +1221,8 @@ int main()
 	unsigned int tick_count = 0;
 
         // for sbrk()
-        unsigned char heaps[TASK_LIMIT][HEAP_SIZE];
-        unsigned char *program_break[TASK_LIMIT];
+        unsigned char heaps[HEAP_SIZE * TASK_LIMIT];
+        unsigned char *program_break;
         unsigned char *previous_pb;
 
 	SysTick_Config(configCPU_CLOCK_HZ / configTICK_RATE_HZ);
@@ -1245,8 +1248,7 @@ int main()
 		ready_list[i] = NULL;
 
         /* Initialize program_break */
-        for(i = 0; i < TASK_LIMIT; i++)
-                program_break[i] = heaps[i]; // program_break is located at last end location
+        program_break = heaps; // program_break is located at last end location
 
 	while (1) {
 		tasks[current_task].stack = activate(tasks[current_task].stack);
@@ -1337,9 +1339,9 @@ int main()
 			}
 			break;
                 case SYS_SBRK:
-                        if(program_break[current_task] + task[current_task].stack->r0 >= heaps[current_task] - 1 && program_break[current_task] + task[current_task].stack->r0 < heaps[current_task] + HEAP_SIZE) {
-                                previous_pb = program_break[current_task];
-                                program_break[current_task] += task[current_task].stack->r0;
+                        if(program_break + task[current_task].stack->r0 >= heaps && program_break + task[current_task].stack->r0 < heaps + (HEAP_SIZE * TASK_LIMIT)) {
+                                previous_pb = program_break;
+                                program_break += task[current_task].stack->r0;
                                 task[current_task].stack->r0 = previous_pb;
                         }
                         else {
