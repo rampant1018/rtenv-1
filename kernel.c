@@ -9,10 +9,10 @@
 #endif
 #include <stddef.h>
 #include <ctype.h>
-#include <alloca.h>
+#include <stdint.h>
 
 /* malloc */
-typedef long Align; // for alignment to long boundary
+typedef uint32_t Align; // for alignment to long boundary
 
 union header { // block header
     struct {
