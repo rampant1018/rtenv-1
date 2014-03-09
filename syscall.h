@@ -29,4 +29,4 @@ int mknod(int fd, int mode, int dev);
 
 void sleep(unsigned int);
 
-void *sbrk(int increment);
+void *sbrk(unsigned increment);
