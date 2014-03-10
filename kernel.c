@@ -197,6 +197,7 @@ void show_task_info(int argc, char *argv[]);
 void show_man_page(int argc, char *argv[]);
 void show_history(int argc, char *argv[]);
 void dynamic_exec(int argc, char *argv[]);
+void mmtest(int argc, char *argv[]);
 
 /* Structure for command handler. */
 typedef struct {
@@ -211,7 +212,8 @@ const hcmd_entry cmd_data[CMD_COUNT] = {
 	[CMD_HISTORY] = {.cmd = "history", .func = show_history, .description = "Show latest commands entered."}, 
 	[CMD_MAN] = {.cmd = "man", .func = show_man_page, .description = "Manual pager."},
 	[CMD_PS] = {.cmd = "ps", .func = show_task_info, .description = "List all the processes."},
-	[CMD_EXEC] = {.cmd = "exec", .func = dynamic_exec, .description = "Dynamic create a process which display a message 5 times."}
+	[CMD_EXEC] = {.cmd = "exec", .func = dynamic_exec, .description = "Dynamic create a process which display a message 5 times."},
+	[CMD_MMTEST] = {.cmd = "mmtest", .func = mmtest, .description = "Memory malloc test."}
 };
 
 evar_entry env_var[MAX_ENVCOUNT];
@@ -890,6 +892,21 @@ void dynamic_process()
             }
             create_process = 0;
         }
+    }
+}
+
+void mmtest(int argc, char *argv[])
+{
+    char *p;
+    int i;
+
+    for(i = 0; i < 5; i++) {
+        write(fdout, "malloc", 7);
+        write(fdout, next_line, 3);
+        p = (char *)malloc(32 * sizeof(char));
+        write(fdout, "free", 5);
+        write(fdout, next_line, 3);
+        free(p);
     }
 }
 
