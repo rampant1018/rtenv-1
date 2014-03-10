@@ -12,7 +12,12 @@
 #include <stdint.h>
 
 /* malloc */
-typedef uint32_t Align; // for alignment to long boundary
+// for alignment to long boundary
+#if UINTPTR_MAX == 0xffffffff
+typedef uint32_t Align;
+#else
+#error "unexcepted value for UINTPTR_MAX marco"
+#endif
 
 union header { // block header
     struct {
