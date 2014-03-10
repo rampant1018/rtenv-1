@@ -7,7 +7,6 @@ CFLAGS = -DUSER_NAME=\"$(USER)\" \
 	 -fno-common -ffreestanding -O0 \
 	 -gdwarf-2 -g3 \
 	 -mcpu=cortex-m3 -mthumb
-QEMU_STM32 ?= ../qemu_stm32/arm-softmmu/qemu-system-arm
 
 ARCH = CM3
 VENDOR = ST
@@ -29,6 +28,7 @@ INCDIR = include \
 	 $(STM32_LIB)/inc \
 	 $(CMSIS_PLAT_SRC)
 INCLUDES = $(addprefix -I,$(INCDIR))
+TOOLDIR = tool
 
 TESTDIR = ./test/
 
@@ -37,6 +37,12 @@ SRC = $(wildcard $(addsuffix /*.c,$(SRCDIR))) \
       $(CMSIS_PLAT_SRC)/startup/gcc_ride7/startup_stm32f10x_md.s
 OBJ := $(addprefix $(OUTDIR)/,$(patsubst %.s,%.o,$(SRC:.c=.o)))
 DEP = $(OBJ:.o=.o.d)
+DAT =
+
+MAKDIR = mk
+MAK = $(wildcard $(MAKDIR)/*.mk)
+
+include $(MAK)
 
 all: $(OUTDIR)/$(TARGET).bin $(OUTDIR)/$(TARGET).list
 
@@ -63,49 +69,6 @@ $(OUTDIR)/%.o: %.s
 	@echo "    CC      "$@
 	@$(CROSS_COMPILE)gcc $(CFLAGS) -MMD -MF $@.d -o $@ -c $(INCLUDES) $<
 
-qemu: main.bin $(QEMU_STM32)
-	$(QEMU_STM32) -M stm32-p103 -kernel main.bin
-
-qemudbg: main.bin $(QEMU_STM32)
-	$(QEMU_STM32) -M stm32-p103 \
-		-gdb tcp::3333 -S \
-		-kernel main.bin
-
-
-qemu_remote: main.bin $(QEMU_STM32)
-	$(QEMU_STM32) -M stm32-p103 -kernel main.bin -vnc :1
-
-qemudbg_remote: main.bin $(QEMU_STM32)
-	$(QEMU_STM32) -M stm32-p103 \
-		-gdb tcp::3333 -S \
-		-kernel main.bin \
-		-vnc :1
-
-qemu_remote_bg: main.bin $(QEMU_STM32)
-	$(QEMU_STM32) -M stm32-p103 \
-		-kernel main.bin \
-		-vnc :1 &
-
-qemudbg_remote_bg: main.bin $(QEMU_STM32)
-	$(QEMU_STM32) -M stm32-p103 \
-		-gdb tcp::3333 -S \
-		-kernel main.bin \
-		-vnc :1 &
-
-emu: main.bin
-	bash emulate.sh main.bin
-
-qemuauto: main.bin gdbscript
-	bash emulate.sh main.bin &
-	sleep 1
-	$(CROSS_COMPILE)gdb -x gdbscript&
-	sleep 5
-
-qemuauto_remote: main.bin gdbscript
-	bash emulate_remote.sh main.bin &
-	sleep 1
-	$(CROSS_COMPILE)gdb -x gdbscript&
-	sleep 5
 
 check: unit_test.c unit_test.h
 	$(MAKE) main.bin DEBUG_FLAGS=-DDEBUG
@@ -147,4 +110,4 @@ check: unit_test.c unit_test.h
 	@pkill -9 $(notdir $(QEMU_STM32))
 
 clean:
-	rm -f *.elf *.bin *.list
+	rm -rf $(OUTDIR)
