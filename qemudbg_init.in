@@ -1,4 +1,4 @@
-file main.elf
+file build/main.elf
 target remote :3333
 define show_environment_variables
    echo Current environment variables:\n
