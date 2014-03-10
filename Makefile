@@ -1,3 +1,5 @@
+TARGET = main
+
 CROSS_COMPILE ?= arm-none-eabi-
 CC := $(CROSS_COMPILE)gcc
 CFLAGS = -DUSER_NAME=\"$(USER)\" \
@@ -11,8 +13,6 @@ ARCH = CM3
 VENDOR = ST
 PLAT = STM32F10x
 
-TESTDIR = ./test/
-
 LIBDIR = .
 CMSIS_LIB=$(LIBDIR)/libraries/CMSIS/$(ARCH)
 STM32_LIB=$(LIBDIR)/libraries/STM32F10x_StdPeriph_Driver
@@ -20,42 +20,48 @@ STM32_LIB=$(LIBDIR)/libraries/STM32F10x_StdPeriph_Driver
 CMSIS_PLAT_SRC = $(CMSIS_LIB)/DeviceSupport/$(VENDOR)/$(PLAT)
 
 OUTDIR = build
-SRCDIR = $(CMSIS_LIB)/CoreSupport \
+SRCDIR = src \
+	 $(CMSIS_LIB)/CoreSupport \
 	 $(STM32_LIB)/src \
 	 $(CMSIS_PLAT_SRC)
-INCDIR = $(CMSIS_LIB)/CoreSupport \
+INCDIR = include \
+	 $(CMSIS_LIB)/CoreSupport \
 	 $(STM32_LIB)/inc \
 	 $(CMSIS_PLAT_SRC)
 INCLUDES = $(addprefix -I,$(INCDIR))
 
-all: main.bin
+TESTDIR = ./test/
 
-main.bin: kernel.c kernel.h context_switch.s syscall.s syscall.h
-	$(CROSS_COMPILE)gcc \
-	        $(CFLAGS) \
-		-I . \
-		-I$(LIBDIR)/libraries/CMSIS/CM3/CoreSupport \
-		-I$(LIBDIR)/libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x \
-		-I$(CMSIS_LIB)/CM3/DeviceSupport/ST/STM32F10x \
-		-I$(LIBDIR)/libraries/STM32F10x_StdPeriph_Driver/inc \
-		-o main.elf \
-		\
-		$(CMSIS_LIB)/CoreSupport/core_cm3.c \
-		$(CMSIS_PLAT_SRC)/system_stm32f10x.c \
-		$(CMSIS_PLAT_SRC)/startup/gcc_ride7/startup_stm32f10x_md.s \
-		$(STM32_LIB)/src/stm32f10x_rcc.c \
-		$(STM32_LIB)/src/stm32f10x_gpio.c \
-		$(STM32_LIB)/src/stm32f10x_usart.c \
-		$(STM32_LIB)/src/stm32f10x_exti.c \
-		$(STM32_LIB)/src/misc.c \
-		\
-		context_switch.s \
-		syscall.s \
-		stm32_p103.c \
-		kernel.c \
-		memcpy.s
-	$(CROSS_COMPILE)objcopy -Obinary main.elf main.bin
-	$(CROSS_COMPILE)objdump -S main.elf > main.list
+SRC = $(wildcard $(addsuffix /*.c,$(SRCDIR))) \
+      $(wildcard $(addsuffix /*.s,$(SRCDIR))) \
+      $(CMSIS_PLAT_SRC)/startup/gcc_ride7/startup_stm32f10x_md.s
+OBJ := $(addprefix $(OUTDIR)/,$(patsubst %.s,%.o,$(SRC:.c=.o)))
+DEP = $(OBJ:.o=.o.d)
+
+all: $(OUTDIR)/$(TARGET).bin $(OUTDIR)/$(TARGET).list
+
+$(OUTDIR)/$(TARGET).bin: $(OUTDIR)/$(TARGET).elf
+	@echo "    OBJCOPY "$@
+	@$(CROSS_COMPILE)objcopy -Obinary $< $@
+
+$(OUTDIR)/$(TARGET).list: $(OUTDIR)/$(TARGET).elf
+	@echo "    LIST    "$@
+	@$(CROSS_COMPILE)objdump -S $< > $@
+
+$(OUTDIR)/$(TARGET).elf: $(OBJ) $(DAT)
+	@echo "    LD      "$@
+	@echo "    MAP     "$(OUTDIR)/$(TARGET).map
+	@$(CROSS_COMPILE)gcc $(CFLAGS) -Wl,-Map=$(OUTDIR)/$(TARGET).map -o $@ $^
+
+$(OUTDIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	@echo "    CC      "$@
+	@$(CROSS_COMPILE)gcc $(CFLAGS) -MMD -MF $@.d -o $@ -c $(INCLUDES) $<
+
+$(OUTDIR)/%.o: %.s
+	@mkdir -p $(dir $@)
+	@echo "    CC      "$@
+	@$(CROSS_COMPILE)gcc $(CFLAGS) -MMD -MF $@.d -o $@ -c $(INCLUDES) $<
 
 qemu: main.bin $(QEMU_STM32)
 	$(QEMU_STM32) -M stm32-p103 -kernel main.bin
