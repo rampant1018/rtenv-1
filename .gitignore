@@ -5,3 +5,4 @@ main.list
 gdb.txt
 test-*.txt
 build/
+*~
