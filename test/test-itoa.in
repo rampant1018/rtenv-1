@@ -1,4 +1,4 @@
-source qemudbg_init.in
+source test/qemudbg_init.in
 set logging on
 set itoa(0, cmd[0])
 if !strcmp(cmd[0], "0")

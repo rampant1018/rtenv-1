@@ -1,4 +1,4 @@
-source qemudbg_init.in
+source test/qemudbg_init.in
 set logging on
 set strcpy(env_var[0].name, "EDITOR")
 set strcpy(env_var[0].value, "vi")

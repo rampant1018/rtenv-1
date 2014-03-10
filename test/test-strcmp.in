@@ -1,4 +1,4 @@
-source qemudbg_init.in
+source test/qemudbg_init.in
 set logging on
 set strcpy(cmd[0], "def")
 set strcpy(cmd[1], "def")
