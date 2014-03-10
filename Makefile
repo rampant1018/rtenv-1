@@ -1,5 +1,10 @@
 CROSS_COMPILE ?= arm-none-eabi-
 CC := $(CROSS_COMPILE)gcc
+CFLAGS = -DUSER_NAME=\"$(USER)\" \
+	 -Wl,-Tmain.ld -nostartfiles \
+	 -fno-common -ffreestanding -O0 \
+	 -gdwarf-2 -g3 \
+	 -mcpu=cortex-m3 -mthumb
 QEMU_STM32 ?= ../qemu_stm32/arm-softmmu/qemu-system-arm
 
 ARCH = CM3
@@ -14,20 +19,25 @@ STM32_LIB=$(LIBDIR)/libraries/STM32F10x_StdPeriph_Driver
 
 CMSIS_PLAT_SRC = $(CMSIS_LIB)/DeviceSupport/$(VENDOR)/$(PLAT)
 
+OUTDIR = build
+SRCDIR = $(CMSIS_LIB)/CoreSupport \
+	 $(STM32_LIB)/src \
+	 $(CMSIS_PLAT_SRC)
+INCDIR = $(CMSIS_LIB)/CoreSupport \
+	 $(STM32_LIB)/inc \
+	 $(CMSIS_PLAT_SRC)
+INCLUDES = $(addprefix -I,$(INCDIR))
+
 all: main.bin
 
 main.bin: kernel.c kernel.h context_switch.s syscall.s syscall.h
 	$(CROSS_COMPILE)gcc \
-		-DUSER_NAME=\"$(USER)\" \
-		-Wl,-Tmain.ld -nostartfiles \
+	        $(CFLAGS) \
 		-I . \
 		-I$(LIBDIR)/libraries/CMSIS/CM3/CoreSupport \
 		-I$(LIBDIR)/libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x \
 		-I$(CMSIS_LIB)/CM3/DeviceSupport/ST/STM32F10x \
 		-I$(LIBDIR)/libraries/STM32F10x_StdPeriph_Driver/inc \
-		-fno-common -ffreestanding -O0 \
-		-gdwarf-2 -g3 \
-		-mcpu=cortex-m3 -mthumb \
 		-o main.elf \
 		\
 		$(CMSIS_LIB)/CoreSupport/core_cm3.c \
