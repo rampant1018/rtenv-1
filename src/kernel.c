@@ -104,6 +104,14 @@ int fdout;
 int fdin;
 int create_process = 0;
 
+void strcpy(char *dest, const char *src);
+void check_keyword();
+void find_events();
+void itoa(int n, char *dst, int base);
+int fill_arg(char *const dest, const char *argv);
+int write_blank(int blank_num);
+void init_rs232();
+
 /* Command handlers. */
 void export_envvar(int argc, char *argv[]);
 void show_echo(int argc, char *argv[]);
