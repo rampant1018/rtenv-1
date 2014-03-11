@@ -6,7 +6,7 @@ CC := $(CROSS_COMPILE)gcc
 CFLAGS = -DUSER_NAME=\"$(USER)\" \
 	 -Wl,-Tmain.ld -nostartfiles \
 	 -fno-common -ffreestanding -O0 \
-	 -gdwarf-2 -g3 \
+	 -gdwarf-2 -g3 -Wall -Werror \
 	 -mcpu=cortex-m3 -mthumb
 
 ARCH = CM3
