@@ -109,7 +109,7 @@ void check_keyword();
 void find_events();
 void itoa(int n, char *dst, int base);
 int fill_arg(char *const dest, const char *argv);
-int write_blank(int blank_num);
+void write_blank(int blank_num);
 void init_rs232();
 
 /* Command handlers. */
@@ -813,7 +813,7 @@ void dynamic_process()
     }
 }
 
-int write_blank(int blank_num)
+void write_blank(int blank_num)
 {
 	char blank[] = " ";
 	int blank_count = 0;
