@@ -1361,13 +1361,13 @@ int main()
 			}
 			break;
                 case SYS_SBRK:
-                        if(program_break + task[current_task].stack->r0 >= heaps && program_break + task[current_task].stack->r0 < heaps + (HEAP_SIZE * TASK_LIMIT)) {
+                        if(program_break + tasks[current_task].stack->r0 >= heaps && program_break + tasks[current_task].stack->r0 < heaps + (HEAP_SIZE * TASK_LIMIT)) {
                                 previous_pb = program_break;
-                                program_break += task[current_task].stack->r0;
-                                task[current_task].stack->r0 = previous_pb;
+                                program_break += tasks[current_task].stack->r0;
+                                tasks[current_task].stack->r0 = previous_pb;
                         }
                         else {
-                                task[current_task].stack->r0 = -1;
+                                tasks[current_task].stack->r0 = -1;
                         }
 
 

@@ -1,3 +1,5 @@
+#ifndef SYSCALL_H
+#define SYSCALL_H
 #include <stddef.h>
 
 // Syscall Marco
@@ -30,3 +32,4 @@ int mknod(int fd, int mode, int dev);
 void sleep(unsigned int);
 
 void *sbrk(unsigned increment);
+#endif
