@@ -3,6 +3,7 @@
 
 #include "kernel.h"
 #include "syscall.h"
+#include "string.h"
 
 #ifdef DEBUG
 #include "unit_test.h"
@@ -15,51 +16,6 @@ void *malloc(size_t size)
 {
    static char m[1024] = {0};
    return m;
-}
-
-void *memcpy(void *dest, const void *src, size_t n);
-
-int strcmp(const char *a, const char *b) __attribute__ ((naked));
-int strcmp(const char *a, const char *b)
-{
-	asm(
-        "strcmp_lop:                \n"
-        "   ldrb    r2, [r0],#1     \n"
-        "   ldrb    r3, [r1],#1     \n"
-        "   cmp     r2, #1          \n"
-        "   it      hi              \n"
-        "   cmphi   r2, r3          \n"
-        "   beq     strcmp_lop      \n"
-		"	sub     r0, r2, r3  	\n"
-        "   bx      lr              \n"
-		:::
-	);
-}
-
-int strncmp(const char *a, const char *b, size_t n)
-{
-	size_t i;
-
-	for (i = 0; i < n; i++)
-		if (a[i] != b[i])
-			return a[i] - b[i];
-
-	return 0;
-}
-
-size_t strlen(const char *s) __attribute__ ((naked));
-size_t strlen(const char *s)
-{
-	asm(
-		"	sub  r3, r0, #1			\n"
-        "strlen_loop:               \n"
-		"	ldrb r2, [r3, #1]!		\n"
-		"	cmp  r2, #0				\n"
-        "   bne  strlen_loop        \n"
-		"	sub  r0, r3, r0			\n"
-		"	bx   lr					\n"
-		:::
-	);
 }
 
 void puts(char *s)
@@ -104,7 +60,6 @@ int fdout;
 int fdin;
 int create_process = 0;
 
-void strcpy(char *dest, const char *src);
 void check_keyword();
 void find_events();
 void itoa(int n, char *dst, int base);
