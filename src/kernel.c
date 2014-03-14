@@ -9,12 +9,99 @@
 #endif
 #include <stddef.h>
 #include <ctype.h>
+#include <stdint.h>
 
-/* FIXME: This is not implement  completely. Needs to modify later. */
-void *malloc(size_t size) 
+/* malloc */
+// for alignment to long boundary
+#if UINTPTR_MAX == 0xffffffff
+typedef uint32_t Align;
+#else
+#error "unexcepted value for UINTPTR_MAX marco"
+#endif
+
+union header { // block header
+    struct {
+        union header *ptr; // next free block on the free list
+        unsigned size;     // size of this block
+    } s;
+    Align x; // force alignment
+};
+
+typedef union header Header;
+
+static Header base; // first empty block
+static Header *freep = NULL; // start of free list
+
+void free(void *ap);
+void *malloc(unsigned nbytes);
+
+void *malloc(unsigned nbytes) 
 {
-   static char m[1024] = {0};
-   return m;
+    Header *p, *prevp;
+    unsigned nunits;
+    void *cp;
+
+    nunits = (nbytes + sizeof(Header) - 1) / sizeof(Header) + 1; // Round up
+
+    if((prevp = freep) == NULL) { // first call malloc
+        base.s.ptr = freep = prevp = &base;
+        base.s.size = 0;
+    }
+
+    for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr) { // Search for avaiable block
+        if(p->s.size >= nunits) { // big enough
+            if(p->s.size == nunits) { // size same
+                prevp->s.ptr = p->s.ptr; // remove this block from free list
+            }
+            else { // allocate tail end
+                p->s.size -= nunits;
+                p += p->s.size;
+                p->s.size = nunits;
+            }
+            freep = prevp;
+            return (void *)(p + 1);
+        }
+        if(p == freep) { // wrapped around free list
+            cp = sbrk(nunits * sizeof(Header));
+            if(cp == (void *)-1) {
+                return NULL; // fail
+            }
+            else {
+                p = (Header *)cp;
+                p->s.size = nunits;
+                free((void *)(p + 1));
+                p = freep;
+            }
+        }
+    }
+}
+
+void free(void *ap)
+{
+    Header *bp, *p;
+    bp = (Header *)ap - 1; // Point to block header
+    for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr) { // Search for proper location
+        if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))  // freed block at start or end of arena
+            break;
+    }
+
+    if(bp + bp->s.size == p->s.ptr) { // Join to upper nbr
+        bp->s.size += p->s.ptr->s.size;
+        bp->s.ptr = p->s.ptr->s.ptr;
+    }
+    else { 
+        bp->s.ptr = p->s.ptr;
+    }
+
+    if(p + p->s.size == bp) { // Join to lower nbr
+        p->s.size += bp->s.size;
+        p->s.ptr = bp->s.ptr;
+    }
+    else {
+        p->s.ptr = bp;
+    }
+
+    freep = p;
 }
 
 void *memcpy(void *dest, const void *src, size_t n);
@@ -73,6 +160,7 @@ void puts(char *s)
 }
 
 #define STACK_SIZE 512 /* Size of task stacks in words */
+#define HEAP_SIZE  128
 #define TASK_LIMIT 8  /* Max number of tasks we can handle */
 #define PIPE_BUF   64 /* Size of largest atomic pipe message */
 #define PATH_MAX   32 /* Longest absolute path */
@@ -120,6 +208,7 @@ void show_task_info(int argc, char *argv[]);
 void show_man_page(int argc, char *argv[]);
 void show_history(int argc, char *argv[]);
 void dynamic_exec(int argc, char *argv[]);
+void mmtest(int argc, char *argv[]);
 
 /* Structure for command handler. */
 typedef struct {
@@ -134,7 +223,8 @@ const hcmd_entry cmd_data[CMD_COUNT] = {
 	[CMD_HISTORY] = {.cmd = "history", .func = show_history, .description = "Show latest commands entered."}, 
 	[CMD_MAN] = {.cmd = "man", .func = show_man_page, .description = "Manual pager."},
 	[CMD_PS] = {.cmd = "ps", .func = show_task_info, .description = "List all the processes."},
-	[CMD_EXEC] = {.cmd = "exec", .func = dynamic_exec, .description = "Dynamic create a process which display a message 5 times."}
+	[CMD_EXEC] = {.cmd = "exec", .func = dynamic_exec, .description = "Dynamic create a process which display a message 5 times."},
+	[CMD_MMTEST] = {.cmd = "mmtest", .func = mmtest, .description = "Memory malloc test."}
 };
 
 evar_entry env_var[MAX_ENVCOUNT];
@@ -813,6 +903,21 @@ void dynamic_process()
     }
 }
 
+void mmtest(int argc, char *argv[])
+{
+    char *p;
+    int i;
+
+    for(i = 0; i < 5; i++) {
+        write(fdout, "malloc", 7);
+        write(fdout, next_line, 3);
+        p = (char *)malloc(32 * sizeof(char));
+        write(fdout, "free", 5);
+        write(fdout, next_line, 3);
+        free(p);
+    }
+}
+
 void write_blank(int blank_num)
 {
 	char blank[] = " ";
@@ -1145,6 +1250,11 @@ int main()
 	int timeup;
 	unsigned int tick_count = 0;
 
+        // for sbrk()
+        unsigned char heaps[HEAP_SIZE * TASK_LIMIT];
+        unsigned char *program_break;
+        unsigned char *previous_pb;
+
 	SysTick_Config(configCPU_CLOCK_HZ / configTICK_RATE_HZ);
 
 	init_rs232();
@@ -1166,6 +1276,9 @@ int main()
 	/* Initialize ready lists */
 	for (i = 0; i <= PRIORITY_LIMIT; i++)
 		ready_list[i] = NULL;
+
+        /* Initialize program_break */
+        program_break = heaps; // program_break is located at last end location
 
 	while (1) {
 		tasks[current_task].stack = activate(tasks[current_task].stack);
@@ -1255,6 +1368,18 @@ int main()
 				tasks[current_task].status = TASK_WAIT_TIME;
 			}
 			break;
+                case SYS_SBRK:
+                        if(program_break + tasks[current_task].stack->r0 >= heaps && program_break + tasks[current_task].stack->r0 < heaps + (HEAP_SIZE * TASK_LIMIT)) {
+                                previous_pb = program_break;
+                                program_break += tasks[current_task].stack->r0;
+                                tasks[current_task].stack->r0 = (unsigned int)previous_pb;
+                        }
+                        else {
+                                tasks[current_task].stack->r0 = -1;
+                        }
+
+
+                        break;
 		default: /* Catch all interrupts */
 			if ((int)tasks[current_task].stack->r7 < 0) {
 				unsigned int intr = -tasks[current_task].stack->r7 - 16;

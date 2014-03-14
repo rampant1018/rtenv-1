@@ -19,6 +19,7 @@ typedef enum {
 	CMD_MAN,
 	CMD_PS,
         CMD_EXEC,
+        CMD_MMTEST,
 	CMD_COUNT
 } CMD_TYPE;
 

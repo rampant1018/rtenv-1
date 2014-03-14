@@ -75,3 +75,11 @@ sleep:
 	nop
 	pop {r7}
 	bx lr
+.global sbrk
+sbrk:
+        push {r7}
+        mov r7, #0xA
+        svc 0
+        nop
+        pop {r7}
+        bx lr
